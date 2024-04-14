@@ -1,8 +1,8 @@
 package main
 
-
 import (
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,11 +11,13 @@ func main() {
 	// Fiber instance
 	app := fiber.New()
 
+  var port string = os.Getenv("PORT")
+
 	// Routes
 	app.Get("/", hello)
 
 	// Start server
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(":" + port))
 }
 
 // Handler
