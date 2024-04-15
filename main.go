@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"app/database"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -12,6 +14,8 @@ func main() {
 	app := fiber.New()
 
 	var port string = os.Getenv("PORT")
+
+	database.ConnectDB()
 
 	// Routes
 	app.Get("/", hello)
