@@ -11,7 +11,7 @@ func main() {
 	// Fiber instance
 	app := fiber.New()
 
-  var port string = os.Getenv("PORT")
+	var port string = os.Getenv("PORT")
 
 	// Routes
 	app.Get("/", hello)
