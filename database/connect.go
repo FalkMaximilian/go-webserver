@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"app/model"
+	"go-webserver/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

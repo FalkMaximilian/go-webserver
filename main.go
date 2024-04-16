@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"app/database"
+	"go-webserver/database"
 
 	"github.com/gofiber/fiber/v2"
 )
