@@ -24,11 +24,11 @@ func ConnectDB() {
 
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("DBHOST"),
+		os.Getenv("PGHOST"),
 		db_port,
-		os.Getenv("DBUSER"),
-		os.Getenv("DBPASSWORD"),
-		os.Getenv("DBNAME"),
+		os.Getenv("PGUSER"),
+		os.Getenv("PGPASSWORD"),
+		os.Getenv("PGNAME"),
 	)
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
