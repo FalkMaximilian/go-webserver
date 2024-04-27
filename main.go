@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-webserver/database"
 	"go-webserver/model"
 	"log"
@@ -22,6 +23,7 @@ func main() {
 	// Routes
 	app.Get("/", hello)
 	app.Post("/register", registerUser)
+	app.Post("/login", login)
 
 	// Start server
 	log.Fatal(app.Listen(":" + port))
@@ -63,6 +65,35 @@ func registerUser(c *fiber.Ctx) error {
 	log.Println(result.Error)
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"success": "User was created"})
+}
+
+func login(c *fiber.Ctx) error {
+
+	var data map[string]interface{}
+	if err := c.BodyParser(&data); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cannot parse JSON"})
+	}
+
+	username, ok := data["username"].(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Username is required"})
+	}
+
+	password, ok := data["password"].(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Passsword is required"})
+	}
+
+	user := new(model.User)
+	database.DB.Where("username = ?", username).First(&user)
+	log.Println(user)
+
+	result := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if result != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Password is wrong!"})
+	}
+
+	return c.SendString(fmt.Sprintf("Das Passwort für User %s war korrekt", username))
 }
 
 // Handler
