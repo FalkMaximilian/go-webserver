@@ -59,7 +59,9 @@ func registerUser(c *fiber.Ctx) error {
 	}
 
 	log.Println("Creating used in DB")
-	database.DB.Create(user)
+	result := database.DB.Create(user)
+	log.Println(result.Error)
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"success": "User was created"})
 }
 
