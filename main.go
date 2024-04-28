@@ -7,9 +7,11 @@ import (
 	"go-webserver/model"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -64,9 +66,27 @@ func registerUser(c *fiber.Ctx) error {
 
 	log.Println("Creating used in DB")
 	result := database.DB.Create(user)
-	log.Println(result.Error)
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create user"})
+	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"success": "User was created"})
+	// Create the Claims
+	claims := jwt.MapClaims{
+		"name":  user.Username,
+		"admin": false,
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+	}
+
+	// Create token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	return c.JSON(fiber.Map{"token": t})
 }
 
 func login(c *fiber.Ctx) error {
