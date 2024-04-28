@@ -9,12 +9,14 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
 	// Fiber instance
 	app := fiber.New()
+	app.Use(cors.New())
 
 	var port string = os.Getenv("PORT")
 
@@ -93,7 +95,7 @@ func login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Password is wrong!"})
 	}
 
-	return c.SendString(fmt.Sprintf("Das Passwort für User %s war korrekt", username))
+	return c.SendString(fmt.Sprintf("Das Passwort für User '%s' war korrekt", username))
 }
 
 // Handler
