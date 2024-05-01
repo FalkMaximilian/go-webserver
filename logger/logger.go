@@ -1,19 +1,13 @@
 package logger
 
 import (
-  "go.uber.org/zap"
+  "github.com/sirupsen/logrus"
 )
 
 var (
-  Logger *zap.Logger
+  Logger *logrus.Logger
 )
 
 func Init() {
-  var err error
-  Logger, err = zap.NewProduction()
-  if err != nil {
-    panic(err)
-  }
-
-  defer Logger.Sync()
+  Logger = logrus.New()
 }
