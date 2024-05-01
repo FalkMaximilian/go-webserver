@@ -16,7 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"go-webserver/logger"
+	"go-webserver/logging"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 
 	database.ConnectDB()
 
-	logger.Init()
+	logging.SetupLogger()
 
 	// Routes
 	app.Get("/", hello)
@@ -133,6 +133,6 @@ func login(c *fiber.Ctx) error {
 
 // Handler
 func hello(c *fiber.Ctx) error {
-	logger.Logger.Info("Hello Endpoint called!")
+	logging.Logger.Info("Hello endpoint called!")
 	return c.SendString("Hello, World 👋!")
 }
