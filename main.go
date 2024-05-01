@@ -15,6 +15,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+
+	"go-webserver/logger"
 )
 
 func main() {
@@ -25,6 +27,8 @@ func main() {
 	var port string = os.Getenv("PORT")
 
 	database.ConnectDB()
+
+	logger.Init()
 
 	// Routes
 	app.Get("/", hello)
@@ -129,5 +133,6 @@ func login(c *fiber.Ctx) error {
 
 // Handler
 func hello(c *fiber.Ctx) error {
+	logger.Logger.Info("Hello Endpoint called!")
 	return c.SendString("Hello, World 👋!")
 }

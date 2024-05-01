@@ -1,8 +1,12 @@
 package api
 
-import "github.com/gofiber/fiber/v2"
+import (
+  "github.com/gofiber/fiber/v2"
+  "go-webserver/logger"
+)
 
 func RegisterHandlers(router fiber.Router) {
+  logger.Logger.Info("Setting up API endpoints.")
   router.Get("/test1", handleEndpoint1)
   router.Get("/test2", handleEndpoint2)
 }
