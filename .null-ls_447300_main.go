@@ -3,14 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"go-webserver/api"
 	"go-webserver/database"
 	"go-webserver/model"
 	"log"
 	"os"
 	"time"
 
-	jwtware "github.com/gofiber/contrib/jwt"
+  jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/golang-jwt/jwt/v5"
@@ -31,12 +30,8 @@ func main() {
 	app.Post("/register", registerUser)
 	app.Post("/login", login)
 
-	app.Use(jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: []byte("secret")},
-	}))
 
-	api_handlers := app.Group("/api")
-	api.RegisterHandlers(api_handlers)
+  app.Use(jwt.New(jwt.))
 
 	// Start server
 	log.Fatal(app.Listen(":" + port))
