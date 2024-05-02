@@ -67,7 +67,7 @@ func registerUser(c *fiber.Ctx) error {
 			return []byte("secret"), nil
 		})
 
-		if err != nil && token.Valid {
+		if err == nil && token.Valid {
 			logging.Logger.Info("Redirect to /")
 			return c.Redirect("/")
 		}
