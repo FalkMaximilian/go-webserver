@@ -47,6 +47,8 @@ func main() {
 }
 
 func registerUser(c *fiber.Ctx) error {
+	// Check if user is already signed in
+	logging.Logger.Info(c.GetReqHeaders())
 
 	log.Println("Parsing input...")
 	var data map[string]interface{}
