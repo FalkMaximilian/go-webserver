@@ -7,6 +7,7 @@ import (
 	"go-webserver/database"
 	"go-webserver/model"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 
@@ -19,10 +20,16 @@ import (
 	"go-webserver/logging"
 )
 
+var (
+	RAND int
+)
+
 func main() {
 	// Fiber instance
 	app := fiber.New()
 	app.Use(cors.New())
+
+	RAND = rand.Int()
 
 	var port string = os.Getenv("PORT")
 
@@ -47,17 +54,20 @@ func main() {
 }
 
 func registerUser(c *fiber.Ctx) error {
+	logging.Logger.Info(RAND)
 	// Check if user is already signed in
 	tokenString := c.Get("Authorization")[7:]
 	if tokenString != "" {
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if alg := token.Method.Alg(); alg != "HS256" {
+				logging.Logger.Errorf("Unexpected signing method: %v", token.Header["alg"])
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
 			return []byte("secret"), nil
 		})
 
 		if err != nil && token.Valid {
+			logging.Logger.Info("Redirect to /")
 			return c.Redirect("/")
 		}
 	}
