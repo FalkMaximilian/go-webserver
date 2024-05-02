@@ -89,7 +89,7 @@ func registerUser(c *fiber.Ctx) error {
 	claims := jwt.MapClaims{
 		"name":  user.Username,
 		"admin": false,
-		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+		"exp":   time.Now().Add(time.Hour * 48).Unix(),
 	}
 
 	// Create token
@@ -130,7 +130,23 @@ func login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Password is wrong!"})
 	}
 
-	return c.SendString(fmt.Sprintf("Das Passwort für User '%s' war korrekt", username))
+	// Create the Claims
+	claims := jwt.MapClaims{
+		"name":  user.Username,
+		"admin": false,
+		"exp":   time.Now().Add(time.Hour * 48).Unix(),
+	}
+
+	// Create token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	return c.JSON(fiber.Map{"token": t})
 }
 
 // Handler
