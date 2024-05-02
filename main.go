@@ -59,6 +59,7 @@ func registerUser(c *fiber.Ctx) error {
 	tokenString := c.Get("Authorization")[7:]
 	if tokenString != "" {
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			logging.Logger.Info(token.Method.Alg())
 			if alg := token.Method.Alg(); alg != "HS256" {
 				logging.Logger.Errorf("Unexpected signing method: %v", token.Header["alg"])
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
