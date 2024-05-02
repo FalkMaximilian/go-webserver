@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-webserver/api"
 	"go-webserver/database"
 	"go-webserver/model"
