@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-webserver/api"
 	"go-webserver/database"
 	"go-webserver/model"
@@ -47,7 +48,19 @@ func main() {
 
 func registerUser(c *fiber.Ctx) error {
 	// Check if user is already signed in
-	logging.Logger.Info(c.GetReqHeaders())
+	tokenString := c.Get("Authorization")[7:]
+	if tokenString != "" {
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte("secret"), nil
+		})
+
+		if err != nil && token.Valid {
+			return c.Redirect("/")
+		}
+	}
 
 	log.Println("Parsing input...")
 	var data map[string]interface{}
