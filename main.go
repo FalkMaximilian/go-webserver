@@ -18,6 +18,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"go-webserver/logging"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -30,6 +32,11 @@ func main() {
 	app.Use(cors.New())
 
 	RAND = rand.Int()
+
+	err := godotenv.Load()
+	if err != nil {
+		logging.Logger.Fatalf("Error loading .env file: %v", err)
+	}
 
 	var port string = os.Getenv("PORT")
 
@@ -56,13 +63,12 @@ func main() {
 func registerUser(c *fiber.Ctx) error {
 	logging.Logger.Info(RAND)
 	// Check if user is already signed in
-	tokenString := c.Get("Authorization")[7:]
-	if tokenString != "" {
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	tokenString := c.Get("Authorization")
+	if len(tokenString) > 7 {
+		token, err := jwt.Parse(tokenString[7:], func(token *jwt.Token) (interface{}, error) {
 			logging.Logger.Info(token.Method.Alg())
 			if alg := token.Method.Alg(); alg != "HS256" {
-				logging.Logger.Errorf("Unexpected signing method: %v", token.Header["alg"])
-				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return []byte("secret"), nil
 		})
