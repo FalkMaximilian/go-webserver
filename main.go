@@ -33,7 +33,7 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Println("Error loading .env file: %v", err)
 	}
 
 	var port string = os.Getenv("PORT")

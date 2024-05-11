@@ -11,6 +11,10 @@ I run Postgresql in docker.
 
 `sudo docker run -d --name testdb -p 5432:5432 -e POSTGRES_PASSWORD=Tardis1808! -v postgres:/var/lib/postgresql/data postgres:latest`
 
+`sudo docker ps`
+
+`sudo docker stop <CONTAINER ID>`
+
 To connect to it a .env file has to be created in the root folder.
 
 ```

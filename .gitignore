@@ -16,7 +16,7 @@
 
 # Environment variables for local testing
 .env
-.null-ls_447300_main.go
+.null-ls_*_main.go
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
