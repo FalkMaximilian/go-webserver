@@ -17,8 +17,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"go-webserver/logging"
-
 	"github.com/joho/godotenv"
 )
 
@@ -35,14 +33,12 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		logging.Logger.Fatalf("Error loading .env file: %v", err)
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
 	var port string = os.Getenv("PORT")
 
 	database.ConnectDB()
-
-	logging.SetupLogger()
 
 	// Routes
 	app.Get("/", hello)
@@ -61,12 +57,12 @@ func main() {
 }
 
 func registerUser(c *fiber.Ctx) error {
-	logging.Logger.Info(RAND)
+	log.Println(RAND)
 	// Check if user is already signed in
 	tokenString := c.Get("Authorization")
 	if len(tokenString) > 7 {
 		token, err := jwt.Parse(tokenString[7:], func(token *jwt.Token) (interface{}, error) {
-			logging.Logger.Info(token.Method.Alg())
+			log.Println(token.Method.Alg())
 			if alg := token.Method.Alg(); alg != "HS256" {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -74,7 +70,7 @@ func registerUser(c *fiber.Ctx) error {
 		})
 
 		if err == nil && token.Valid {
-			logging.Logger.Info("Redirect to /")
+			log.Println("Redirect to /")
 			return c.Redirect("/")
 		}
 	}
@@ -180,6 +176,6 @@ func login(c *fiber.Ctx) error {
 
 // Handler
 func hello(c *fiber.Ctx) error {
-	logging.Logger.Info("Hello endpoint called!")
+	log.Println("Hello endpoint called!")
 	return c.SendString("Hello, World 👋!")
 }
