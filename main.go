@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-webserver/api"
+	"go-webserver/auth"
 	"go-webserver/database"
 	"go-webserver/model"
 	"log"
-	"math/rand"
 	"os"
-	"time"
+	"strconv"
 
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -20,34 +20,38 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-	RAND int
-)
-
 func main() {
-	// Fiber instance
-	app := fiber.New()
-	app.Use(cors.New())
 
-	RAND = rand.Int()
-
+	// Read environment vars for local development
 	err := godotenv.Load()
 	if err != nil {
 		log.Printf("Could not load .env file: %v", err)
 	}
 
+	// Setup fiber and cors
+	app := fiber.New()
+	app.Use(cors.New())
+
+	// Read port from env
 	var port string = os.Getenv("PORT")
+	if _, err = strconv.ParseUint(port, 10, 32); err != nil {
+		log.Fatal("Critical error: environment variable 'PORT' must be set to a valid and unused port")
+	}
 
-	database.ConnectDB()
+	if err = database.ConnectDB(); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
 
-	// Routes
+	if err = auth.SetupJWT(); err != nil {
+		log.Fatalf("Failed to set up JWT: %v", err)
+	}
+
+	// Routes without authentication
 	app.Get("/", hello)
 	app.Post("/register", registerUser)
 	app.Post("/login", login)
 
-	app.Use(jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: []byte("secret")},
-	}))
+	app.Use(jwtware.New(auth.GetConfig()))
 
 	api_handlers := app.Group("/api")
 	api.RegisterHandlers(api_handlers)
@@ -57,7 +61,6 @@ func main() {
 }
 
 func registerUser(c *fiber.Ctx) error {
-	log.Println(RAND)
 	// Check if user is already signed in
 	tokenString := c.Get("Authorization")
 	if len(tokenString) > 7 {
@@ -110,18 +113,8 @@ func registerUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create user"})
 	}
 
-	// Create the Claims
-	claims := jwt.MapClaims{
-		"name":  user.Username,
-		"admin": false,
-		"exp":   time.Now().Add(time.Hour * 48).Unix(),
-	}
-
-	// Create token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte("secret"))
+	t, err := auth.GetJWT(user.Username)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
@@ -155,18 +148,8 @@ func login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Password is wrong!"})
 	}
 
-	// Create the Claims
-	claims := jwt.MapClaims{
-		"name":  user.Username,
-		"admin": false,
-		"exp":   time.Now().Add(time.Hour * 48).Unix(),
-	}
-
-	// Create token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte("secret"))
+	t, err := auth.GetJWT(user.Username)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}

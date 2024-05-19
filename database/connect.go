@@ -12,32 +12,54 @@ import (
 	"gorm.io/gorm"
 )
 
-func ConnectDB() {
+func ConnectDB() error {
 
-	// Get database port and test if correct
-	db_port := os.Getenv("PGPORT")
-	_, err := strconv.ParseUint(db_port, 10, 32)
+	var (
+		pghost     string
+		pgport     string
+		pguser     string
+		pgpassword string
+		pgname     string
+	)
 
-	if err != nil {
-		log.Fatal("PGPORT invalid! Abort...")
+	if pghost = os.Getenv("PGHOST"); pghost == "" {
+		return fmt.Errorf("environment variable 'PGHOST' missing")
+	}
+
+	pgport = os.Getenv("PGPORT")
+	if _, err := strconv.ParseUint(pgport, 10, 32); err != nil {
+		return fmt.Errorf("environment variable 'PGPORT' missing or invalid")
+	}
+
+	if pguser = os.Getenv("PGUSER"); pguser == "" {
+		return fmt.Errorf("environment variable 'PGUSER' missing")
+	}
+
+	if pgpassword = os.Getenv("PGPASSWORD"); pgpassword == "" {
+		return fmt.Errorf("environment variable 'PGPASSWORD' missing")
+	}
+
+	if pgname = os.Getenv("PGNAME"); pgname == "" {
+		return fmt.Errorf("environment variable 'PGNAME' missing")
 	}
 
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("PGHOST"),
-		db_port,
-		os.Getenv("PGUSER"),
-		os.Getenv("PGPASSWORD"),
-		os.Getenv("PGNAME"),
+		pghost,
+		pgport,
+		pguser,
+		pgpassword,
+		pgname,
 	)
 
+	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal("Could not establish database connection! Abort...")
+		return err
 	}
 
-	log.Println("Established connection to database.")
 	DB.AutoMigrate(&model.User{})
-	log.Println("Database migrated")
+	log.Printf("Database setup successful")
+	return nil
 }
