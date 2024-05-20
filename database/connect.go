@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"go-webserver/model"
+	"go-webserver/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -59,7 +59,7 @@ func ConnectDB() error {
 		return err
 	}
 
-	DB.AutoMigrate(&model.User{})
+	DB.AutoMigrate(&models.User{})
 	log.Printf("Database setup successful")
 	return nil
 }
