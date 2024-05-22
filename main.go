@@ -3,8 +3,8 @@ package main
 import (
 	"go-webserver/config"
 	"go-webserver/database"
+	"go-webserver/logger"
 	"go-webserver/routes"
-	"log"
 	"os"
 	"strconv"
 
@@ -16,8 +16,9 @@ func main() {
 
 	var err error
 	if err = config.SetupConfig(); err != nil {
-		log.Fatalf("Critical error: %v", err)
+		logger.Fatal("Critical error: ", err)
 	}
+	logger.Info("Reading config was successful!")
 
 	// Setup fiber and cors
 	app := fiber.New()
@@ -26,11 +27,11 @@ func main() {
 	// Read port from env
 	var port string = os.Getenv("PORT")
 	if _, err = strconv.ParseUint(port, 10, 32); err != nil {
-		log.Fatal("Critical error: environment variable 'PORT' must be set to a valid and unused port")
+		logger.Fatal("Critical error: environment variable 'PORT' must be set to a valid and unused port")
 	}
 
 	if err = database.ConnectDB(); err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Fatal("Failed to connect to database: ", err)
 	}
 
 	// Routes without authentication
@@ -39,5 +40,5 @@ func main() {
 	routes.SetupAPIRoutes(app)
 
 	// Start server
-	log.Fatal(app.Listen(":" + port))
+	logger.Fatal(app.Listen(":" + port))
 }

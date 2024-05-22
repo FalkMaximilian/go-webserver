@@ -2,21 +2,23 @@ package token
 
 import (
 	"go-webserver/config"
+	"go-webserver/logger"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GetJwtToken(name string) (string, error) {
+func GetJwtToken(user_id uint) (string, error) {
+	logger.Debug("Issuing new JWT token")
+
 	claims := jwt.MapClaims{
-		"name":  name,
-		"admin": false,
-		"exp":   time.Now().Add(time.Hour * 24 * time.Duration(config.GetJWTExpires())).Unix(),
+		"user_id": user_id,
+		"exp":     time.Now().Add(time.Hour * 48).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString([]byte(config.GetJWTSecret()))
+	return token.SignedString(config.GetJWTSecret())
 }
 
 /*

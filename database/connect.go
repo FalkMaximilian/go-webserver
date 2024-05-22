@@ -2,10 +2,10 @@ package database
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
+	"go-webserver/logger"
 	"go-webserver/models"
 
 	"gorm.io/driver/postgres"
@@ -53,13 +53,12 @@ func ConnectDB() error {
 	)
 
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
-	if err != nil {
+	if DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{}); err != nil {
 		return err
 	}
+	logger.Info("Connection to database established successfully!")
 
-	DB.AutoMigrate(&models.User{})
-	log.Printf("Database setup successful")
+	DB.AutoMigrate(&models.User{}, &models.Set{}, &models.Card{})
+	logger.Info("Database auto-migration completed!")
 	return nil
 }
