@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"go-webserver/config"
 	"go-webserver/logger"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"github.com/sirupsen/logrus"
 )
 
 func JWTProtected() fiber.Handler {
@@ -16,7 +18,7 @@ func JWTProtected() fiber.Handler {
 		// Get the token from the request header
 		tokenString := c.Get("Authorization")
 		if len(tokenString) <= 7 {
-			logger.Warn("Missing or invalid JWT token")
+			// logger.Warn("Missing or invalid JWT token")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Missing or invalid JWT token",
 			})
@@ -34,7 +36,7 @@ func JWTProtected() fiber.Handler {
 		})
 
 		if err != nil {
-			logger.Warn("Invalid JWT token")
+			// logger.Warn("Invalid JWT token")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid JWT token",
 			})
@@ -42,15 +44,34 @@ func JWTProtected() fiber.Handler {
 
 		// Extract user information from the token
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			user := claims["user_id"] // Adjust the key according to your JWT payload structure
-			c.Locals("user_id", user) // Store the user ID in the context locals
-			logger.Debug("Added 'user_id' to Locals")
+			user := claims["user_id"].(float64) // Get user_id as f64
+			c.Locals("user_id", uint(user))     // Store the user ID in the context locals as uint
+			// logger.Debug("Added 'user_id' to Locals")
 		} else {
-			logger.Warn("Invalid JWT token")
+			// logger.Warn("Invalid JWT token")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid JWT token",
 			})
 		}
 		return c.Next()
+	}
+}
+
+func LoggingMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		start := time.Now()
+		err := c.Next()
+		stop := time.Now()
+
+		logger.Log.WithFields(logrus.Fields{
+			"status":     c.Response().StatusCode(),
+			"method":     c.Method(),
+			"path":       c.Path(),
+			"latency":    stop.Sub(start).String(),
+			"client_ip":  c.IP(),
+			"user_agent": c.Get("User-Agent"),
+		}).Info("request completed")
+
+		return err
 	}
 }

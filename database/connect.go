@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"go-webserver/logger"
 	"go-webserver/models"
 
 	"gorm.io/driver/postgres"
@@ -56,9 +55,9 @@ func ConnectDB() error {
 	if DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{}); err != nil {
 		return err
 	}
-	logger.Info("Connection to database established successfully!")
+	// logger.Info("Connection to database established successfully!")
 
 	DB.AutoMigrate(&models.User{}, &models.Set{}, &models.Card{})
-	logger.Info("Database auto-migration completed!")
+	// logger.Info("Database auto-migration completed!")
 	return nil
 }
