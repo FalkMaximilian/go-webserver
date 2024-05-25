@@ -8,4 +8,5 @@ type User struct {
 	Email    string `gorm:"uniqueIndex;not null;size:255;" validate:"required,email" json:"email"`
 	Password string `gorm:"not null;" validate:"required" json:"password"`
 	Sets     []Set
+	Cards    []Card
 }

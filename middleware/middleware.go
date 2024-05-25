@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-webserver/config"
 	"go-webserver/logger"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,17 +18,21 @@ func JWTProtected() fiber.Handler {
 
 		// Get the token from the request header
 		tokenString := c.Get("Authorization")
-		if len(tokenString) <= 7 {
-			// logger.Warn("Missing or invalid JWT token")
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Missing or invalid JWT token",
-			})
+		logger.Log.Debug(tokenString)
+
+		if tokenString == "" {
+			logger.Log.Warn("missing jwt token")
+			c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing jwt token"})
+			return fmt.Errorf("missing jwt token")
 		}
 
-		// Remove 'bearer' from token
-		tokenString = tokenString[len("Bearer "):]
+		// Remove 'Bearer: ' prefix if present
+		if strings.HasPrefix(tokenString, "Bearer ") {
+			logger.Log.Debug("removing 'Bearer ' prefix from jwt token")
+			tokenString = tokenString[len("Bearer "):]
+		}
 
-		// Parse the JWT token
+		// Parse the jwt token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -36,23 +41,53 @@ func JWTProtected() fiber.Handler {
 		})
 
 		if err != nil {
-			// logger.Warn("Invalid JWT token")
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid JWT token",
-			})
+			logger.Log.WithField("error", err).Warn("invalid jwt token")
+			c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid jwt token"})
+			return err
 		}
 
 		// Extract user information from the token
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			user := claims["user_id"].(float64) // Get user_id as f64
 			c.Locals("user_id", uint(user))     // Store the user ID in the context locals as uint
-			// logger.Debug("Added 'user_id' to Locals")
 		} else {
-			// logger.Warn("Invalid JWT token")
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid JWT token",
-			})
+			logger.Log.Warn("invalid jwt token")
+			c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid jwt token"})
+			return fmt.Errorf("invalid jwt token")
 		}
+
+		return c.Next()
+	}
+}
+
+func RedirectIfAuthenticated() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Get("Authorization")
+
+		if tokenString == "" {
+			logger.Log.Debug("no jwt token - continue")
+			return c.Next()
+		}
+
+		// Remove 'Bearer: ' prefix if present
+		if strings.HasPrefix(tokenString, "Bearer ") {
+			logger.Log.Debug("removing 'Bearer ' prefix from jwt token")
+			tokenString = tokenString[len("Bearer "):]
+		}
+
+		// Parse the jwt token
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return config.GetJWTSecret(), nil
+		})
+
+		if err == nil && token.Valid {
+			c.Redirect("/")
+			return fmt.Errorf("redirecting to home")
+		}
+
 		return c.Next()
 	}
 }
@@ -63,15 +98,35 @@ func LoggingMiddleware() fiber.Handler {
 		err := c.Next()
 		stop := time.Now()
 
-		logger.Log.WithFields(logrus.Fields{
-			"status":     c.Response().StatusCode(),
-			"method":     c.Method(),
-			"path":       c.Path(),
-			"latency":    stop.Sub(start).String(),
-			"client_ip":  c.IP(),
-			"user_agent": c.Get("User-Agent"),
-		}).Info("request completed")
+		if sc := c.Response().StatusCode(); sc >= 500 {
+			logger.Log.WithFields(logrus.Fields{
+				"status":     c.Response().StatusCode(),
+				"method":     c.Method(),
+				"path":       c.Path(),
+				"latency":    stop.Sub(start).String(),
+				"client_ip":  c.IP(),
+				"user_agent": c.Get("User-Agent"),
+			}).Error(err)
+		} else if sc >= 400 {
+			logger.Log.WithFields(logrus.Fields{
+				"status":     c.Response().StatusCode(),
+				"method":     c.Method(),
+				"path":       c.Path(),
+				"latency":    stop.Sub(start).String(),
+				"client_ip":  c.IP(),
+				"user_agent": c.Get("User-Agent"),
+			}).Warn(err)
+		} else {
+			logger.Log.WithFields(logrus.Fields{
+				"status":     c.Response().StatusCode(),
+				"method":     c.Method(),
+				"path":       c.Path(),
+				"latency":    stop.Sub(start).String(),
+				"client_ip":  c.IP(),
+				"user_agent": c.Get("User-Agent"),
+			}).Info(err)
+		}
 
-		return err
+		return nil
 	}
 }

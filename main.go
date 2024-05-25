@@ -13,8 +13,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
-var testVariable string = "test"
-
 func main() {
 
 	var err error
@@ -40,9 +38,17 @@ func main() {
 
 	// Routes without authentication
 
-	routes.SetupAuthRoutes(app)
-	routes.SetupAPIRoutes(app)
+	app.Get("/", HomeHandler)
+
+	api := app.Group("/api")
+	routes.SetupAuthRoutes(api)
+	routes.SetupCardRoutes(api)
+	routes.SetupSetRoutes(api)
 
 	// Start server
 	logger.Log.Fatal(app.Listen(":" + port))
+}
+
+func HomeHandler(c *fiber.Ctx) error {
+	return c.SendString("Home")
 }

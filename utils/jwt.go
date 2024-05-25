@@ -1,4 +1,4 @@
-package token
+package utils
 
 import (
 	"go-webserver/config"
@@ -8,7 +8,6 @@ import (
 )
 
 func GetJwtToken(user_id uint) (string, error) {
-	//logger.Debug("Issuing new JWT token")
 
 	claims := jwt.MapClaims{
 		"user_id": user_id,
@@ -19,11 +18,3 @@ func GetJwtToken(user_id uint) (string, error) {
 
 	return token.SignedString(config.GetJWTSecret())
 }
-
-/*
-func GetConfig() jwtware.Config {
-	return jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: []byte(config.GetJWTSecret())},
-	}
-}
-*/
