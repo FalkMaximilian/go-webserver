@@ -83,23 +83,27 @@ func LoginHandler(c *fiber.Ctx) error {
 	username, ok := data["username"].(string)
 	if !ok {
 		logger.Log.Warn("username misssing in request")
-		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Username is required"})
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username is required"})
 		return fmt.Errorf("username missing in request")
 	}
 
 	password, ok := data["password"].(string)
 	if !ok {
 		logger.Log.Warn("password misssing in request")
-		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Passsword is required"})
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "passsword is required"})
 		return fmt.Errorf("password missing in request")
 	}
 
 	user := new(models.User)
-	database.DB.Where("username = ?", username).First(&user)
+	if err := database.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		logger.Log.Info(err)
+		c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "username not found"})
+		return err
+	}
 
 	result := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if result != nil {
-		c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Password is wrong!"})
+		c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "password incorrect"})
 		return fmt.Errorf("incorrect password")
 	}
 
@@ -113,4 +117,96 @@ func LoginHandler(c *fiber.Ctx) error {
 
 	c.JSON(fiber.Map{"token": t})
 	return fmt.Errorf("login successful")
+}
+
+func DeleteUserHandler(c *fiber.Ctx) error {
+
+	var data map[string]interface{}
+	if err := c.BodyParser(&data); err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid json"})
+		return fmt.Errorf("could not parse json")
+	}
+
+	username, ok := data["username"].(string)
+	if !ok {
+		logger.Log.Warn("username misssing in request")
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Username is required"})
+		return fmt.Errorf("username missing in request")
+	}
+
+	password, ok := data["password"].(string)
+	if !ok {
+		logger.Log.Warn("password misssing in request")
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Passsword is required"})
+		return fmt.Errorf("password missing in request")
+	}
+
+	user_id := c.Locals("user_id").(uint)
+
+	user := new(models.User)
+	if err := database.DB.Where("username = ? AND id = ?", username, user_id).First(&user).Error; err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not delete user"})
+		return err
+	}
+
+	result := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if result != nil {
+		logger.Log.Info("provided password incorrect")
+		c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "provided password incorrect"})
+		return fmt.Errorf("incorrect password")
+	}
+
+	// Load all sets for the user
+	var sets []models.Set
+	if err := database.DB.Where("user_id = ?", user_id).Find(&sets).Error; err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return err
+	}
+
+	// Clear the associations for each set
+	for _, set := range sets {
+		if err := database.DB.Model(&set).Association("Cards").Clear(); err != nil {
+			logger.Log.Warn(err)
+			c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return err
+		}
+	}
+
+	var card models.Card
+	if err := database.DB.Delete(&card, "user_id = ?", user_id).Error; err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return err
+	}
+
+	var set models.Set
+	if err := database.DB.Delete(&set, "user_id = ?", user_id).Error; err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return err
+	}
+
+	if err := database.DB.Model(&user).Association("Cards").Clear(); err != nil {
+		logger.Log.Info("could not clear cards association")
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return err
+	}
+
+	if err := database.DB.Model(&user).Association("Sets").Clear(); err != nil {
+		logger.Log.Warn("could not clear sets association")
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return err
+	}
+
+	if err := database.DB.Delete(&user, "id = ? AND username = ?", user_id, username).Error; err != nil {
+		logger.Log.Info(err)
+		c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "could not delete user"})
+		return err
+	}
+
+	c.Status(fiber.StatusOK).JSON(fiber.Map{"success": "user deleted successfully"})
+	return fmt.Errorf("user deleted successfully")
 }

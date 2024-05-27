@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// Create a new jwt token that encodes the user_id
 func GetJwtToken(user_id uint) (string, error) {
 
 	claims := jwt.MapClaims{

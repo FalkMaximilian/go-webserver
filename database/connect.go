@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Reads all needed environment variables and established connection to database
 func ConnectDB() error {
 
 	var (

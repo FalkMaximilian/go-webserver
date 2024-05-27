@@ -12,13 +12,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Middleware to verify jwt validity and extract some information from it
 func JWTProtected() fiber.Handler {
 
 	return func(c *fiber.Ctx) error {
 
 		// Get the token from the request header
 		tokenString := c.Get("Authorization")
-		logger.Log.Debug(tokenString)
 
 		if tokenString == "" {
 			logger.Log.Warn("missing jwt token")
@@ -40,6 +40,7 @@ func JWTProtected() fiber.Handler {
 			return config.GetJWTSecret(), nil
 		})
 
+		// Some error while parsing token
 		if err != nil {
 			logger.Log.WithField("error", err).Warn("invalid jwt token")
 			c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid jwt token"})
@@ -60,16 +61,20 @@ func JWTProtected() fiber.Handler {
 	}
 }
 
+// Redirect to home if valid jwt is present (login and register handler)
 func RedirectIfAuthenticated() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+
+		// Get token from request header
 		tokenString := c.Get("Authorization")
 
+		// If not token present continue
 		if tokenString == "" {
 			logger.Log.Debug("no jwt token - continue")
 			return c.Next()
 		}
 
-		// Remove 'Bearer: ' prefix if present
+		// Remove 'Bearer ' prefix if present
 		if strings.HasPrefix(tokenString, "Bearer ") {
 			logger.Log.Debug("removing 'Bearer ' prefix from jwt token")
 			tokenString = tokenString[len("Bearer "):]
@@ -83,6 +88,7 @@ func RedirectIfAuthenticated() fiber.Handler {
 			return config.GetJWTSecret(), nil
 		})
 
+		// If no error and token valid redirect to home
 		if err == nil && token.Valid {
 			c.Redirect("/")
 			return fmt.Errorf("redirecting to home")
@@ -92,6 +98,7 @@ func RedirectIfAuthenticated() fiber.Handler {
 	}
 }
 
+// Middleware used for logging each request after it has been handled
 func LoggingMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()

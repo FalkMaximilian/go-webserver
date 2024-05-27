@@ -24,8 +24,6 @@ type FiberConfig struct {
 
 var jwt_secret_key []byte
 
-var log_level string
-
 /*
 var PgConfig PgConfig
 var FiberConfig FiberConfig

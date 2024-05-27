@@ -10,14 +10,50 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Get all sets for the user requesting it
+func GetSetsHandler(c *fiber.Ctx) error {
+	logger.Log.Debug("entering 'GetSets' handler")
+
+	user_id := c.Locals("user_id").(uint)
+
+	var sets []models.Set
+	if err := database.DB.Find(&sets, "user_id = ?", user_id).Error; err != nil {
+		logger.Log.Info(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not retrieve sets"})
+		return err
+	}
+
+	c.Status(fiber.StatusOK).JSON(fiber.Map{"sets": sets})
+	return fmt.Errorf("sets retreived successfully")
+}
+
+// Get set with id. Has to belong to user requesting it
+func GetSetHandler(c *fiber.Ctx) error {
+	logger.Log.Debug("entering 'GetSet' handler")
+
+	user_id := c.Locals("user_id").(uint)
+	set_id := c.Params("set_id")
+
+	// Get set with id. Has to be owned by user requesting it
+	var set models.Set
+	if err := database.DB.First(&set, "id = ? AND user_id = ?", set_id, user_id).Error; err != nil {
+		logger.Log.Info(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not get set"})
+		return err
+	}
+
+	c.Status(fiber.StatusOK).JSON(fiber.Map{"set": set})
+	return fmt.Errorf("set retreived successfully")
+}
+
+// Create a new set
 func CreateSetHandler(c *fiber.Ctx) error {
 	logger.Log.Debug("entering 'CreateSet' handler")
 
-	// Get the username from Locals (set in auth middleware) and cast to uint
+	// Get the username
 	user_id := c.Locals("user_id").(uint)
-	//logger.Log.WithField("user_id", user_id).Info("Extracted user ID from context")
 
-	// Get all matched records
+	// Get user for user_id
 	var user models.User
 	var err error
 	if err = database.DB.First(&user, user_id).Error; err != nil {
@@ -28,8 +64,8 @@ func CreateSetHandler(c *fiber.Ctx) error {
 		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to create set"})
 		return fmt.Errorf("could not find user in db")
 	}
-	logger.Log.WithField("user_id", user_id).Debug("user found in database")
 
+	// Parse request body into set
 	s := new(models.Set)
 	if err = c.BodyParser(s); err != nil {
 		logger.Log.WithField("error", err).Error("failed to parse request body")
@@ -56,10 +92,12 @@ func CreateSetHandler(c *fiber.Ctx) error {
 	return fmt.Errorf("set created successfully")
 }
 
+// Remove all cards from a set and then delete the set
 func DeleteSetHandler(c *fiber.Ctx) error {
 	set_id := c.Params("set_id")
 	user_id := c.Locals("user_id").(uint)
 
+	// Get set by id. Has to belong to the user requesting it
 	var set models.Set
 	if err := database.DB.Find(&set, "id = ? AND user_id = ?", set_id, user_id).Error; err != nil {
 		logger.Log.Warn(err)
@@ -67,12 +105,14 @@ func DeleteSetHandler(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Clear all associations to Cards for that set (remove entries from set_cards)
 	if err := database.DB.Model(&set).Association("Cards").Clear(); err != nil {
 		logger.Log.Warn(err)
 		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not delete set"})
 		return err
 	}
 
+	// Finally delete the set
 	if err := database.DB.Delete(&set).Error; err != nil {
 		logger.Log.Warn(err)
 		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not delete set"})
@@ -83,8 +123,10 @@ func DeleteSetHandler(c *fiber.Ctx) error {
 	return fmt.Errorf("set deleted successfully")
 }
 
+// Used to add a card to a set. Both have to be owned by the user requesting said action
 func AddCardToSetHandler(c *fiber.Ctx) error {
 
+	// Parse json body into data
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
 		logger.Log.Info(err)
@@ -112,6 +154,7 @@ func AddCardToSetHandler(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Add card to set by setting association in set_cards
 	if err := database.DB.Model(&set).Association("Cards").Append(&card); err != nil {
 		logger.Log.Error(err)
 		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "card could not be added to set"})
@@ -120,4 +163,9 @@ func AddCardToSetHandler(c *fiber.Ctx) error {
 
 	c.Status(fiber.StatusOK).JSON(fiber.Map{"set_id": set_id, "card_id": card_id})
 	return fmt.Errorf("card successfully added to set")
+}
+
+// Not yet implemented
+func RemoveCardFromSetHandler(c *fiber.Ctx) error {
+	return fmt.Errorf("card successfully removed from set")
 }

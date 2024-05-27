@@ -10,6 +10,39 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func GetCardHandler(c *fiber.Ctx) error {
+	logger.Log.Debug("entering 'GetCard' handler")
+
+	user_id := c.Locals("user_id").(uint)
+	card_id := c.Params("card_id")
+
+	var card models.Card
+	if err := database.DB.First(&card, "id = ? AND user_id = ?", card_id, user_id).Error; err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get card"})
+		return fmt.Errorf("failed to get card")
+	}
+
+	c.Status(fiber.StatusOK).JSON(fiber.Map{"card": card})
+	return fmt.Errorf("successfully received card")
+}
+
+func GetCardsHandler(c *fiber.Ctx) error {
+	logger.Log.Debug("entering 'GetCard' handler")
+
+	user_id := c.Locals("user_id").(uint)
+
+	var cards []models.Card
+	if err := database.DB.Find(&cards, "user_id = ?", user_id).Error; err != nil {
+		logger.Log.Warn(err)
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get cards"})
+		return fmt.Errorf("failed to get cards")
+	}
+
+	c.Status(fiber.StatusOK).JSON(fiber.Map{"cards": cards})
+	return fmt.Errorf("successfully received card")
+}
+
 func CreateCardHandler(c *fiber.Ctx) error {
 
 	user_id := c.Locals("user_id").(uint)
