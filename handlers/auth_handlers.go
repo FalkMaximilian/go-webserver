@@ -28,6 +28,19 @@ func RegisterUserHandler(c *fiber.Ctx) error {
 		return fmt.Errorf("password missing in request")
 	}
 
+	matchingPassword, ok := data["matching_password"].(string)
+	if !ok {
+		logger.Log.Info("matching password missing in request")
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "matching password is required"})
+		return fmt.Errorf("matching password missing in request")
+	}
+
+	if password != matchingPassword {
+		logger.Log.Info("passwords do not match")
+		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "passwords do not match"})
+		return fmt.Errorf("passwords do not match")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Log.Error(err)
@@ -59,7 +72,7 @@ func RegisterUserHandler(c *fiber.Ctx) error {
 		return fmt.Errorf("error while creating user in db")
 	}
 
-	t, err := utils.GetJwtToken(user.ID)
+	t, err := utils.GetJwtToken(user.ID, user.Username)
 	if err != nil {
 		logger.Log.Error(err)
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -108,7 +121,7 @@ func LoginHandler(c *fiber.Ctx) error {
 	}
 
 	// Generate encoded token and send it as response.
-	t, err := utils.GetJwtToken(user.ID)
+	t, err := utils.GetJwtToken(user.ID, user.Username)
 	if err != nil {
 		logger.Log.Error(err)
 		c.SendStatus(fiber.StatusInternalServerError)
