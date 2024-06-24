@@ -1,10 +1,15 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+)
 
 type Set struct {
-	gorm.Model
-	UserID uint
-	Name   string `gorm:"not null;size:255" json:"name"`
-	Cards  []Card `gorm:"many2many:set_cards"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt time.Time `json:"-"`
+	UserID    uint      `gorm:"not null" json:"user_id"`
+	Name      string    `gorm:"not null;size:255" json:"name"`
+	Cards     []Card    `gorm:"many2many:set_cards" json:"-"`
 }
